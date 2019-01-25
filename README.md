@@ -1,12 +1,12 @@
-#Cumulus ZTP for HCS with Nutanix
+# Cumulus ZTP for HCS with Nutanix
 This is the home of the [Zero Touch Provisioning](https://docs.cumulusnetworks.com/display/DOCS/Zero+Touch+Provisioning+-+ZTP) script to provision a pair of Cumulus Linux switches with [Cumulus Hyperconverged Service](https://docs.cumulusnetworks.com/display/DOCS/Cumulus+Hyperconverged+Service+with+Nutanix) to support a single, dual-attached rack of Nutanix nodes.
 
-##Usage
+## Usage
 This script is designed to be used with [Nutanix on a Stick](http://www.cumulusnetworks.com/noas) to build a USB stick to deploy Cumulus Linux with the latest software image, license and configuration. 
 
 If you wish to manually modify the ZTP script or wish to deploy via an HTTP server for ZTP, you may freely modify this script and configuration. 
 
-###ztp_config.txt
+### ztp_config.txt
 This file is the configuration settings that are loaded at run time to provide specific configurations for the Nutanix service. The file contains the following settings
 * `NUTANIX_USERNAME=admin` -- The username that is used to access Prism or AOS API
 * `NUTANIX_PASSWORD=nutanix/4u` -- The password of the configured user for Prism
@@ -17,7 +17,7 @@ This file is the configuration settings that are loaded at run time to provide s
 * `UPLINKS=swp51,swp52` -- One or more interfaces that are connections into existing infrastructure. This is a comma separated list. This is optional. The default is none.
 * `PEERLINK=swp49,swp50` -- The ports that connect between the two switches connecting to Nutanix nodes. This is a comma separated list. The default is `swp49,swp50`
 
-###cumulus-ztp
+### cumulus-ztp
 This is the python script that is executed as a ZTP script. The lack of file extension is intentional.
 
 If you are manually executing this ZTP script, you must replace the line `LICENSE_KEY_GOES_HERE` on line 83 with your full license key string.
