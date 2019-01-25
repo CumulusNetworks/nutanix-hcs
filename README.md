@@ -22,5 +22,10 @@ This is the python script that is executed as a ZTP script. The lack of file ext
 
 If you are manually executing this ZTP script, you must replace the line `LICENSE_KEY_GOES_HERE` on line 83 with your full license key string.
 
+## Troubleshooting
+The HCS ZTP script will write to `/var/log/syslog` during the ZTP process. Use `cat /var/log/syslog | grep ZTP` to view any HCS ZTP syslog lines from the ZTP process.
+
+You can view the ZTP process status with `ztp -s`
+
 ## More Information
 For more information about Cumulus HCS and Nutanix integration visit the [Cumulus HCI portal](https://cumulusnetworks.com/networking-solutions/converged-infrastructure/)
