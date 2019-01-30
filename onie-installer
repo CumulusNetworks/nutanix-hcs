@@ -1,0 +1,113 @@
+#! /bin/sh
+#-------------------------------------------------------------------------------
+#
+# Copyright Cumulus Networks, inc 2017.  All rights reserved
+# 
+# Universal image selector for a USB installation
+# 
+# First, we determine the correct type of image based on understanding of the
+# CPU architecture and switching ASIC.  Then, we sanity check the environment
+# to make sure that we're operating on sound footing.  Then, we find the 
+# correct installer, copy it to a temporary file, and finally execute it.
+#
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+#
+# Functions
+#
+
+log_failure_msg()
+{
+    printf "Failure: $@" | tee /dev/console | logger -t "USB-installer" -p local0.info
+}
+
+#-------------------------------------------------------------------------------
+#
+# Deduce the CPU and Switch ASIC
+#
+
+IMAGE_SELECT=
+
+case $(uname -m) in
+    ppc)
+	IMAGE_SELECT=powerpc
+	;;
+    x86_64)
+	VERS=3.3.1
+	for I in $(lspci | grep "Class 0200" | sed -e "s/^.* //" -e "s/:.*$//")
+	do
+	    case $I in
+		14e4) IMAGE_SELECT="bcm-amd64"; break;;
+		15b3) IMAGE_SELECT="mlx-amd64"; break;;
+	    esac
+	done
+	if [ -z $IMAGE_SELECT ]; then
+	    log_failure_msg "Error: Unable to determine switching ASIC"
+	    exit 1
+	fi
+	;;
+    armv7l)
+	IMAGE_SELECT="bcm-armel"
+	;;
+    *)
+	log_failure_msg "Error: Unable to determine running CPU architecture."
+	exit 1
+esac
+
+
+#-------------------------------------------------------------------------------
+#
+# Now we're getting serious, sanity check the environemnt
+#
+
+[[ ${onie_exec_url::11} == "file://dev/" ]] || {
+    log_failure_msg "Expecting \$onie_exec_url to start with file://dev/"
+    exit 1
+}
+
+PART=$(echo $onie_exec_url | sed -e "s%file:/%%" -e "s%/[^/]*$%%")
+$(blkid $PART &> /dev/null) || {
+    log_failure_msg "$onie_exec_url is not on a block device"
+    exit 1
+}
+
+MNT=$(mktemp -d)
+mount $PART $MNT || {
+    log_failure_msg "Could not mount the block device in $onie_exec_url"
+    umount $MNT
+    exit 1
+}
+
+diff $0 $MNT/onie-installer || {
+    log_failure_msg "$onie_exec_url should be the same script as $0"
+    umount $MNT
+    exit 1
+}
+
+
+#-------------------------------------------------------------------------------
+#
+# See if we have an apprpriate installer
+#
+
+IMAGE=$(ls $MNT/images/*-${IMAGE_SELECT}.bin 2>/dev/null)
+
+[ -n $IMAGE ] || {
+    log_failure_msg "Unable to find a suitable image for ASIC/CPU *-${IMAGE_SELECT}.bin"
+    umount $MNT
+    exit 1
+}
+
+#-------------------------------------------------------------------------------
+#
+# Get it and run it
+#
+
+INSTALLER=$(mktemp -p /tmp)
+cp $IMAGE $INSTALLER
+sync; sync; umount $MNT
+chmod oug+x $INSTALLER
+$INSTALLER $@ && exit 0
+log_failure_msg "Installer $IMAGE failed"
+exit 1
